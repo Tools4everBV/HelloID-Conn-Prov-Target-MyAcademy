@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-{connectorName}-Create
+# HelloID-Conn-Prov-Target-MyAcademy-Create
 # PowerShell V2
 #################################################
 
@@ -7,7 +7,7 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Resolve-{connectorName}Error {
+function Resolve-MyAcademyError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -64,7 +64,7 @@ try {
         }
 
         # Determine if a user needs to be [created] or [correlated]
-        Write-Information "Verifying if a {connectorName} account exists where $correlationField is: [$correlationValue]"
+        Write-Information "Verifying if a MyAcademy account exists where $correlationField is: [$correlationValue]"
 
         $correlatedAccount = @{
             Id          = (New-Guid).Guid
@@ -96,7 +96,7 @@ try {
 
             # Make sure to test with special characters and if needed; add utf8 encoding.
             if (-not($actionContext.DryRun -eq $true)) {
-                Write-Information 'Creating and correlating {connectorName} account'
+                Write-Information 'Creating and correlating MyAcademy account'
                 # < Write Create logic here >
 
                 $createdAccount = Invoke-RestMethod @splatCreateParams
@@ -106,14 +106,14 @@ try {
                 $outputContext.AccountReference = $createdAccount.Id
             }
             else {
-                Write-Information '[DryRun] Create and correlate {connectorName} account, will be executed during enforcement'
+                Write-Information '[DryRun] Create and correlate MyAcademy account, will be executed during enforcement'
             }
             $auditLogMessage = "Create account was successful. AccountReference is: [$($outputContext.AccountReference)]"
             break
         }
 
         'CorrelateAccount' {
-            Write-Information 'Correlating {connectorName} account'
+            Write-Information 'Correlating MyAcademy account'
 
             # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
             $outputContext.Data = $correlatedAccount
@@ -136,12 +136,12 @@ catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
-        $auditLogMessage = "Could not create or correlate {connectorName} account: [$($actionContext.References.Account)]. Error: $($errorObj.FriendlyMessage)"
+        $errorObj = Resolve-MyAcademyError -ErrorObject $ex
+        $auditLogMessage = "Could not create or correlate MyAcademy account: [$($actionContext.References.Account)]. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditLogMessage = "Could not create or correlate {connectorName} account: [$($actionContext.References.Account)]. Error: $($ex.Exception.Message)"
+        $auditLogMessage = "Could not create or correlate MyAcademy account: [$($actionContext.References.Account)]. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

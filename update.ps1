@@ -1,13 +1,13 @@
-#################################################################
-# HelloID-Conn-Prov-Target-{connectorName}-RevokePermission-Group
+#################################################
+# HelloID-Conn-Prov-Target-MyAcademy-Update
 # PowerShell V2
-#################################################################
+#################################################
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Resolve-{connectorName}Error {
+function Resolve-MyAcademyError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -47,19 +47,32 @@ function Resolve-{connectorName}Error {
 }
 #endregion
 
-# Begin
 try {
     # Verify if [accountReference] has a value
     if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
         throw 'The account reference could not be found'
     }
 
-    Write-Information 'Verifying if a {connectorName} account exists'
+    Write-Information 'Verifying if a MyAcademy account exists'
     $correlatedAccount = 'userInfo'
     # $correlatedAccount = (Invoke-RestMethod @splatGetUserParams)
 
+    # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
+    $outputContext.PreviousData = $correlatedAccount
+
     if ($null -ne $correlatedAccount) {
-        $lifecycleProcess = 'RevokePermission'
+        # Always compare the account against the current account in target system
+        $splatCompareProperties = @{
+            ReferenceObject  = @($correlatedAccount.PSObject.Properties)
+            DifferenceObject = @($actionContext.Data.PSObject.Properties)
+        }
+        $propertiesChanged = Compare-Object @splatCompareProperties -PassThru | Where-Object { $_.SideIndicator -eq '=>' }
+        if ($propertiesChanged) {
+            $lifecycleProcess = 'UpdateAccount'
+        }
+        else {
+            $lifecycleProcess = 'NoChanges'
+        }
     }
     else {
         $lifecycleProcess = 'NotFound'
@@ -67,54 +80,60 @@ try {
 
     # Process
     switch ($lifecycleProcess) {
-        'RevokePermission' {
+        'UpdateAccount' {
+            Write-Information "Account property(s) required to update: $($propertiesChanged.Name -join ', ')"
 
             # Make sure to test with special characters and if needed; add utf8 encoding.
             if (-not($actionContext.DryRun -eq $true)) {
-                Write-Information "Revoking {connectorName} permission: [$($actionContext.PermissionDisplayName)] - [$($actionContext.References.Permission.Reference)]"
+                Write-Information "Updating MyAcademy account with accountReference: [$($actionContext.References.Account)]"
+                # < Write Update logic here >
 
-                if ($actionContext.Origin -eq 'reconciliation') {
-                    # During reconciliation, hardcoded values may need to be set as personContext and actionContext.Data are not available
-                    # < Write reconciliation Revoke logic here >
-                }
-                else {
-                    # < Write Revoke Permission logic here >
-                }
             }
             else {
-                Write-Information "[DryRun] Revoke {connectorName} permission: [$($actionContext.PermissionDisplayName)] - [$($actionContext.References.Permission.Reference)], will be executed during enforcement"
+                Write-Information "[DryRun] Update MyAcademy account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
             }
 
+            # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
             $outputContext.Success = $true
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Revoke permission: [$($actionContext.PermissionDisplayName)] from [$($actionContext.References.Account)] was successful. Action initiated by: [$($actionContext.Origin)]"
+                    Message = "Update account was successful, Account property(s) updated: [$($propertiesChanged.name -join ',')]"
+                    IsError = $false
+                })
+            break
+        }
+
+        'NoChanges' {
+            Write-Information "No changes to MyAcademy account with accountReference: [$($actionContext.References.Account)]"
+            $outputContext.Success = $true
+            $outputContext.AuditLogs.Add([PSCustomObject]@{
+                    Message = "Skipped updating MyAcademy account with AccountReference: [$($actionContext.References.Account)]. Reason: No changes."
                     IsError = $false
                 })
             break
         }
 
         'NotFound' {
-            Write-Information "{connectorName} account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted"
-            $outputContext.Success = $true
+            Write-Information "MyAcademy account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted"
+            $outputContext.Success = $false
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "{connectorName} account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted. Action initiated by: [$($actionContext.Origin)]"
-                    IsError = $false
+                    Message = "MyAcademy account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted"
+                    IsError = $true
                 })
             break
         }
     }
 }
 catch {
-    $outputContext.success = $false
+    $outputContext.Success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
-        $auditLogMessage = "Could not revoke {connectorName} permission for account: [$($actionContext.References.Account)]. Error: $($errorObj.FriendlyMessage). Action initiated by: [$($actionContext.Origin)]"
+        $errorObj = Resolve-MyAcademyError -ErrorObject $ex
+        $auditLogMessage = "Could not update MyAcademy account: [$($actionContext.References.Account)]. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditLogMessage = "Could not revoke {connectorName} permission for account: [$($actionContext.References.Account)]. Error: $($_.Exception.Message). Action initiated by: [$($actionContext.Origin)]"
+        $auditLogMessage = "Could not update MyAcademy account: [$($actionContext.References.Account)]. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

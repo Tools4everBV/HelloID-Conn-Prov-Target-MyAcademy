@@ -1,5 +1,5 @@
 ############################################################
-# HelloID-Conn-Prov-Target-{connectorName}-Permissions-Group
+# HelloID-Conn-Prov-Target-MyAcademy-Permissions-Group
 # PowerShell V2
 ############################################################
 
@@ -7,7 +7,7 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Resolve-{connectorName}Error {
+function Resolve-MyAcademyError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -80,7 +80,7 @@ catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
+        $errorObj = Resolve-MyAcademyError -ErrorObject $ex
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {

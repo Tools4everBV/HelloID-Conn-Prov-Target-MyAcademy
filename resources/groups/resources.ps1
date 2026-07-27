@@ -1,5 +1,5 @@
 ##########################################################
-# HelloID-Conn-Prov-Target-{connectorName}-Resources-Group
+# HelloID-Conn-Prov-Target-MyAcademy-Resources-Group
 # PowerShell V2
 ##########################################################
 
@@ -7,7 +7,7 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Resolve-{connectorName}Error {
+function Resolve-MyAcademyError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -58,12 +58,12 @@ try {
             if ($True) {
                 # Make sure to test with special characters and if needed; add utf8 encoding.
                 if (-not ($actionContext.DryRun -eq $True)) {
-                    Write-Information "Create [$($resource)] {connectorName} resource"
+                    Write-Information "Create [$($resource)] MyAcademy resource"
                     # < Write resource creation logic here >
 
                 }
                 else {
-                    Write-Information "[DryRun] Create {connectorName} [$($resource)] resource, will be executed during enforcement"
+                    Write-Information "[DryRun] Create MyAcademy [$($resource)] resource, will be executed during enforcement"
                 }
 
                 $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -76,12 +76,12 @@ try {
             # If resource requires Update
             if ($True) {
                 if (-not ($actionContext.DryRun -eq $True)) {
-                    Write-Information "Update [$($resource)] {connectorName} resource"
+                    Write-Information "Update [$($resource)] MyAcademy resource"
                     # < Write resource update logic here >
 
                 }
                 else {
-                    Write-Information "[DryRun] Update {connectorName} [$($resource)] resource, will be executed during enforcement"
+                    Write-Information "[DryRun] Update MyAcademy [$($resource)] resource, will be executed during enforcement"
                 }
 
                 $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -96,12 +96,12 @@ try {
             $ex = $PSItem
             if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
                 $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-                $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
-                $auditLogMessage = "Could not create {connectorName} resource. Error: $($errorObj.FriendlyMessage)"
+                $errorObj = Resolve-MyAcademyError -ErrorObject $ex
+                $auditLogMessage = "Could not create MyAcademy resource. Error: $($errorObj.FriendlyMessage)"
                 Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
             }
             else {
-                $auditLogMessage = "Could not create {connectorName} resource. Error: $($ex.Exception.Message)"
+                $auditLogMessage = "Could not create MyAcademy resource. Error: $($ex.Exception.Message)"
                 Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
             }
             $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -116,12 +116,12 @@ catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
-        $auditLogMessage = "Could not create {connectorName} resource. Error: $($errorObj.FriendlyMessage)"
+        $errorObj = Resolve-MyAcademyError -ErrorObject $ex
+        $auditLogMessage = "Could not create MyAcademy resource. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditLogMessage = "Could not create {connectorName} resource. Error: $($ex.Exception.Message)"
+        $auditLogMessage = "Could not create MyAcademy resource. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

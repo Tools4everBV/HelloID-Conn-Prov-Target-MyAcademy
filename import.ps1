@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-{connectorName}-Import
+# HelloID-Conn-Prov-Target-MyAcademy-Import
 # PowerShell V2
 #################################################
 
@@ -7,7 +7,7 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Resolve-{connectorName}Error {
+function Resolve-MyAcademyError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -48,7 +48,7 @@ function Resolve-{connectorName}Error {
 #endregion
 
 try {
-    Write-Information 'Starting {connectorName} account entitlement import'
+    Write-Information 'Starting MyAcademy account entitlement import'
     $importedAccounts = @(
         @{
             Id         = '1001'
@@ -138,18 +138,18 @@ try {
             Data             = $data
         }
     }
-    Write-Information '{connectorName} account entitlement import completed'
+    Write-Information 'MyAcademy account entitlement import completed'
 }
 catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
+        $errorObj = Resolve-MyAcademyError -ErrorObject $ex
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-        Write-Error "Could not import {connectorName} account entitlements. Error: $($errorObj.FriendlyMessage)"
+        Write-Error "Could not import MyAcademy account entitlements. Error: $($errorObj.FriendlyMessage)"
     }
     else {
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-        Write-Error "Could not import {connectorName} account entitlements. Error: $($ex.Exception.Message)"
+        Write-Error "Could not import MyAcademy account entitlements. Error: $($ex.Exception.Message)"
     }
 }
