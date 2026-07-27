@@ -1,0 +1,33 @@
+{
+    "Configuration": {
+        "UserName": "",
+        "Password": "",
+        "BaseUrl": ""
+    },
+    "DryRun": true,
+    "Operation": "undefined",
+    "Data": {
+        "EndDate": "2025-10-22T10:28:05.2085206",
+        "NickName": "Cásey",
+        "Title": "Central Web Engineer",
+        "Department": "Legal",
+        "DisplayName": null,
+        "ExternalId": "123456789",
+        "Manager": "Carl Dijk",
+        "FamilyName": "Bos",
+        "StartDate": "2021-01-01T23:09:08.2863496",
+        "UserName": "casey.bos1"
+    },
+    "CorrelationConfiguration": {
+        "Enabled": true,
+        "PersonField": "Person.ExternalId",
+        "PersonFieldValue": "123456789",
+        "AccountField": "ExternalId",
+        "AccountFieldValue": "123456789"
+    },
+    "AccountCorrelated": false,
+    "References": {
+        "Account": null,
+        "ManagerAccount": null
+    }
+}

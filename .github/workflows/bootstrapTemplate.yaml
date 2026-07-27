@@ -1,0 +1,74 @@
+name: Bootstrap Template
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    if: vars.ISTEMPLATE != 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract & normalize ConnectorName
+        id: vars
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          PREFIX="HelloID-Conn-Prov-Target-"
+
+          if [[ "${REPO_NAME,,}" == ${PREFIX,,}* ]]; then
+            CONNECTOR_NAME="${REPO_NAME:${#PREFIX}}"
+          else
+            CONNECTOR_NAME="$REPO_NAME"
+          fi
+
+          FIXED_REPO_NAME="$PREFIX$CONNECTOR_NAME"
+
+          if [[ "$REPO_NAME" != "$FIXED_REPO_NAME" ]]; then
+            echo "##[warning]Repo name '$REPO_NAME' auto-corrected to '$FIXED_REPO_NAME'."
+          fi
+
+          echo "connector=$CONNECTOR_NAME" >> $GITHUB_OUTPUT
+
+      - name: Replace placeholders and move files to root
+        run: |
+          mkdir -p temp_root
+          cp -r target/* temp_root/
+
+          [ -f temp_root/README-target.md ] && mv temp_root/README-target.md temp_root/README.md
+          [ -f temp_root/CHANGELOG-target.md ] && mv temp_root/CHANGELOG-target.md temp_root/CHANGELOG.md
+
+          if [ -f CHANGELOG.md ]; then
+            TEMPLATE_VERSION=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
+          else
+            TEMPLATE_VERSION="0.0.0"
+          fi
+
+          CURRENT_DATE=$(date +"%d-%m-%Y")
+
+          find temp_root -type f -print0 | while IFS= read -r -d '' file
+          do
+            sed -i "s/{connectorName}/${{ steps.vars.outputs.connector }}/g" "$file"
+            sed -i "s/{currentDate}/$CURRENT_DATE/g" "$file"
+            sed -i "s/{templateVersion}/$TEMPLATE_VERSION/g" "$file"
+          done
+
+          cp -r temp_root/* .
+          rm -rf temp_root target test
+          rm -f .github/workflows/bootStrapTemplate.yaml
+          rm -f CONTRIBUTING.md
+
+      - name: Commit & push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Bootstrap repository: applied ConnectorName" || echo "No changes"
+          git push

@@ -1,0 +1,45 @@
+{
+    "ExternalId": "123456789",
+    "DisplayName": "Cásey Bos",
+    "Name": {
+        "NickName": "Cásey",
+        "FamilyName": "Bos",
+        "FamilyNamePrefix": "Op 't",
+        "FamilyNamePartner": "Huis",
+        "FamilyNamePartnerPrefix": "Van het",
+        "Convention": "PB",
+        "GivenName": "Cásey",
+        "Initials": "C.B"
+    },
+    "Details": {
+        "BirthDate": "1955-02-25T20:05:16.2521853",
+        "BirthLocality": "Zethuis"
+    },
+    "Contact": {
+        "Business": {
+            "Address": {
+                "Street": "Jannepark",
+                "HouseNumber": 117,
+                "PostalCode": "0735 JP",
+                "Locality": "Belt"
+            },
+            "Phone": {
+                "Fixed": "(9578) 089976"
+            },
+            "Email": "C.Bos@Tavu.com"
+        }
+    },
+    "PrimaryContract": {
+        "Department": {
+            "DisplayName": "Legal"
+        },
+        "Title": {
+            "Name": "Central Web Engineer"
+        },
+        "StartDate": "2021-01-01T23:09:08.2863496",
+        "EndDate": "2025-10-22T10:28:05.2085206"
+    },
+    "PrimaryManager": {
+        "DisplayName": "Carl Dijk"
+    }
+}
