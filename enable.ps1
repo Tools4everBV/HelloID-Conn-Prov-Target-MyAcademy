@@ -45,58 +45,93 @@ function Resolve-MyAcademyError {
         Write-Output $httpErrorObj
     }
 }
+
+function New-AuthorizationHeaders {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Generic.Dictionary[[String], [String]]])]
+    param(
+        [parameter(Mandatory)]
+        [string]
+        $authorizationKey
+    )
+    try {    
+        # Add the authorization header to the request
+        Write-Verbose 'Adding Authorization headers'
+
+        $headers = [System.Collections.Generic.Dictionary[[String], [String]]]::new()
+        $pair = '' + ":" + $authorizationKey
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+        $base64 = [System.Convert]::ToBase64String($bytes)
+        $key = "Basic $base64"
+        $headers = @{
+            "authorization" = $Key
+        } 
+
+        Write-Output $headers  
+    }
+    catch {
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
 #endregion
 
 try {
-    # Verify if [accountReference] has a value
     if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
         throw 'The account reference could not be found'
     }
-
-    Write-Information 'Verifying if a MyAcademy account exists'
-    $correlatedAccount = 'userInfo'
-    # $correlatedAccount = (Invoke-RestMethod @splatGetUserParams)
-
-    if ($null -ne $correlatedAccount) {
-        $lifecycleProcess = 'EnableAccount'
+    else{
+        $actionContext.Data.UserID = $actionContext.References.Account
     }
-    else {
-        $lifecycleProcess = 'NotFound'
+
+    $splatHeaderParams = @{
+        authorizationKey = $actionContext.Configuration.AuthorizationKey
     }
+    $headers = New-AuthorizationHeaders @splatHeaderParams
+
+    $lifecycleProcess = 'EnableAccount'
 
     # Process
     switch ($lifecycleProcess) {
         'EnableAccount' {
-            if (-not($actionContext.DryRun -eq $true)) {
-                Write-Information "Enabling MyAcademy account with accountReference: [$($actionContext.References.Account)]"
-                # < Write Enable logic here >
+            $formattedObject = [PSCustomObject]@{}
 
+            foreach ($property in $actionContext.Data.PSObject.Properties) {
+                $newName = $property.Name -replace '_', ' '
+                $formattedObject | Add-Member -MemberType NoteProperty -Name $newName -Value $property.Value
+            }
+
+            # Convert object to csv and make sure each line ends with a newline
+            $body = ($formattedObject | ConvertTo-Csv -NoTypeInformation -Delimiter ',') -join "`r`n"
+
+            $splatEnableParams = @{
+                Uri         = "$($actionContext.Configuration.BaseUrl)/contentHandler/usersCsv"
+                Body        = $body
+                Method      = "Post"
+                ContentType = "text/plain; charset=utf-8"
+                Headers     = $headers
+            }
+
+            if (-not($actionContext.DryRun -eq $true)) {
+                Write-Information 'Enable MyAcademy account'
+                $response = Invoke-RestMethod @splatEnableParams
+                Write-Warning ($response)
             }
             else {
-                Write-Information "[DryRun] Enable MyAcademy account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
+                Write-Information '[DryRun] Enable MyAcademy account, will be executed during enforcement'
+                Write-Information "[DryRun] Body: $body"
             }
-
-            # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = 'Enable account was successful'
-                    IsError = $false
-                })
-            break
-        }
-
-        'NotFound' {
-            Write-Information "MyAcademy account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted"
-            $outputContext.Success = $false
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "MyAcademy account: [$($actionContext.References.Account)] could not be found, indicating that it may have been deleted"
-                    IsError = $true
-                })
+            $auditLogMessage = "Enable account was successful. AccountReference is: [$($outputContext.AccountReference)]"
             break
         }
     }
 
-} 
+    $outputContext.success = $true
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = $lifecycleProcess
+            Message = $auditLogMessage
+            IsError = $false
+        })
+}
 catch {
     $outputContext.success = $false
     $ex = $PSItem
@@ -107,7 +142,7 @@ catch {
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditLogMessage = "Could not enable MyAcademy account: [$($actionContext.References.Account)]. Error: $($_.Exception.Message)"
+        $auditLogMessage = "Could not enable MyAcademy account: [$($actionContext.References.Account)]. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{
