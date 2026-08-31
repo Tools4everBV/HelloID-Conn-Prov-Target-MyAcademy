@@ -45,81 +45,80 @@ function Resolve-MyAcademyError {
         Write-Output $httpErrorObj
     }
 }
+
+function New-AuthorizationHeaders {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Generic.Dictionary[[String], [String]]])]
+    param(
+        [parameter(Mandatory)]
+        [string]
+        $authorizationKey
+    )
+    try {    
+        # Add the authorization header to the request
+        Write-Verbose 'Adding Authorization headers'
+
+        $headers = [System.Collections.Generic.Dictionary[[String], [String]]]::new()
+        $pair = '' + ":" + $authorizationKey
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+        $base64 = [System.Convert]::ToBase64String($bytes)
+        $key = "Basic $base64"
+        $headers = @{
+            "authorization" = $Key
+        } 
+
+        Write-Output $headers  
+    }
+    catch {
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
 #endregion
 
 try {
     # Initial Assignments
     $outputContext.AccountReference = 'Currently not available'
 
-    # Validate correlation configuration
-    if ($actionContext.CorrelationConfiguration.Enabled) {
-        $correlationField = $actionContext.CorrelationConfiguration.AccountField
-        $correlationValue = $actionContext.CorrelationConfiguration.PersonFieldValue
-
-        if ([string]::IsNullOrEmpty($($correlationField))) {
-            throw 'Correlation is enabled but not configured correctly'
-        }
-        if ([string]::IsNullOrEmpty($($correlationValue))) {
-            throw 'Correlation is enabled but [accountFieldValue] is empty. Please make sure it is correctly mapped'
-        }
-
-        # Determine if a user needs to be [created] or [correlated]
-        Write-Information "Verifying if a MyAcademy account exists where $correlationField is: [$correlationValue]"
-
-        $correlatedAccount = @{
-            Id          = (New-Guid).Guid
-            DisplayName = $actionContext.Data.DisplayName
-        }
-        # Example to replace the placeholder code with:
-        # Retrieve user details using an API call and store the result in $correlatedAccount
-        # $correlatedAccount = (Invoke-RestMethod @splatGetUserParams)
+    $splatHeaderParams = @{
+        authorizationKey = $actionContext.Configuration.AuthorizationKey
     }
+    $headers = New-AuthorizationHeaders @splatHeaderParams
 
-    if ($correlatedAccount.Count -eq 0) {
-        $lifecycleProcess = 'CreateAccount'
-    }
-    elseif ($correlatedAccount.Count -eq 1) {
-        $lifecycleProcess = 'CorrelateAccount'
-    }
-    elseif ($correlatedAccount.Count -gt 1) {
-        throw "Multiple accounts found for person where $correlationField is: [$correlationValue]"
-    }
+    $lifecycleProcess = 'CreateAccount'
 
     # Process
     switch ($lifecycleProcess) {
         'CreateAccount' {
-            $splatCreateParams = @{
-                Uri    = $actionContext.Configuration.BaseUrl
-                Method = 'POST'
-                Body   = $actionContext.Data | ConvertTo-Json
+            $formattedObject = [PSCustomObject]@{}
+
+            foreach ($property in $actionContext.Data.PSObject.Properties) {
+                $newName = $property.Name -replace '_', ' '
+                $formattedObject | Add-Member -MemberType NoteProperty -Name $newName -Value $property.Value
             }
 
-            # Make sure to test with special characters and if needed; add utf8 encoding.
+            # Convert object to csv and make sure each line ends with a newline
+            $body = ($formattedObject | ConvertTo-Csv -NoTypeInformation -Delimiter ',') -join "`r`n" 
+
+            $splatCreateParams = @{
+                Uri         = "$($actionContext.Configuration.BaseUrl)/contentHandler/usersCsv"
+                Body        = $body
+                Method      = "Post"
+                ContentType = "text/plain; charset=utf-8"
+                Headers     = $headers
+            }
+
             if (-not($actionContext.DryRun -eq $true)) {
                 Write-Information 'Creating and correlating MyAcademy account'
-                # < Write Create logic here >
+                $response = Invoke-RestMethod @splatCreateParams
+                Write-Warning ($response)
 
-                $createdAccount = Invoke-RestMethod @splatCreateParams
-
-                # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
-                $outputContext.Data = $createdAccount
-                $outputContext.AccountReference = $createdAccount.Id
+                $outputContext.AccountReference = $actionContext.Data.UserID
             }
             else {
                 Write-Information '[DryRun] Create and correlate MyAcademy account, will be executed during enforcement'
+                Write-Information "[DryRun] Body: $body"
             }
             $auditLogMessage = "Create account was successful. AccountReference is: [$($outputContext.AccountReference)]"
-            break
-        }
-
-        'CorrelateAccount' {
-            Write-Information 'Correlating MyAcademy account'
-
-            # Make sure to filter out arrays from $outputContext.Data (If this is not mapped to type Array in the fieldmapping). This is not supported by HelloID.
-            $outputContext.Data = $correlatedAccount
-            $outputContext.AccountReference = $correlatedAccount.Id
-            $outputContext.AccountCorrelated = $true
-            $auditLogMessage = "Correlated account: [$($outputContext.AccountReference)] on field: [$($correlationField)] with value: [$($correlationValue)]"
             break
         }
     }

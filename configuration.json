@@ -1,33 +1,24 @@
 [
-    {
-        "key": "UserName",
-        "type": "input",
-        "defaultValue": "",
-        "templateOptions": {
-            "label": "UserName",
-            "description": "The UserName to connect to the API",
-            "required": true
-        }
+  {
+    "defaultValue": "",
+    "key": "BaseUrl",
+    "templateOptions": {
+      "description": "https://customer.lmshost.nl/customer",
+      "label": "API Url",
+      "placeholder": "Enter the url",
+      "required": true
     },
-    {
-        "key": "Password",
-        "type": "input",
-        "defaultValue": "",
-        "templateOptions": {
-            "type": "password",
-            "label": "Password",
-            "description": "The password to connect to the API",
-            "required": true
-        }
+    "type": "input"
+  },
+  {
+    "defaultValue": "",
+    "key": "AuthorizationKey",
+    "templateOptions": {
+      "label": "MyAcademy Authorization Key",
+      "placeholder": "Please enter an authorization key",
+      "required": true,
+      "type": "password"
     },
-    {
-        "key": "BaseUrl",
-        "type": "input",
-        "defaultValue": "",
-        "templateOptions": {
-            "label": "BaseUrl",
-            "description": "The URL to the API.",
-            "required": true
-        }
-    }
+    "type": "input"
+  }
 ]

@@ -27,13 +27,12 @@
   - [Remarks](#remarks)
   - [Development resources](#development-resources)
     - [API endpoints](#api-endpoints)
-    - [API documentation](#api-documentation)
   - [Getting help](#getting-help)
   - [HelloID docs](#helloid-docs)
 
 ## Introduction
 
-_HelloID-Conn-Prov-Target-MyAcademy_ is a _target_ connector. _MyAcademy_ provides a set of REST APIs that allow you to programmatically interact with its data.
+_HelloID-Conn-Prov-Target-MyAcademy_ is a _target_ connector. _MyAcademy_ provides a set of REST APIs that allow you to programmatically interact with its data. Bascally a csv file is being posted as body of the request.
 
 ## Supported features
 
@@ -41,12 +40,12 @@ The following features are available:
 
 | Feature                                   | Supported | Actions                                 | Remarks           |
 | ----------------------------------------- | --------- | --------------------------------------- | ----------------- |
-| **Account Lifecycle**                     | ✅         | Create, Update, Enable, Disable, Delete |                   |
-| **Permissions**                           | ✅         | Retrieve, Grant, Revoke                 | Static or Dynamic |
+| **Account Lifecycle**                     | ✅         | Create, Update, Enable, Disable        |                   |
+| **Permissions**                           | ❌         | -                                       |                  |
 | **Resources**                             | ❌         | -                                       |                   |
-| **Entitlement Import: Accounts**          | ✅         | -                                       |                   |
+| **Entitlement Import: Accounts**          | ❌         | -                                       |                   |
 | **Entitlement Import: Permissions**       | ❌         | -                                       |                   |
-| **Governance Reconciliation Resolutions** | ✅⚠️        | -                                       |                   |
+| **Governance Reconciliation Resolutions** | ❌         | -                                       |                   |
 
 <!-- 
 Example
@@ -65,38 +64,23 @@ https://raw.githubusercontent.com/Tools4everBV/HelloID-Conn-Prov-Target-MyAcadem
 
 ### Requirements
 
-<!--
-Describe the specific requirements that must be met before using this connector, such as the need for an agent, a certificate or IP whitelisting.
 
-**Please ensure to list the requirements using bullet points for clarity.**
+- **Authorization key**:<br>
+  A valid authorization key must be available in order to connect to the API
 
-Example:
-
-- **SSL Certificate**:<br>
-  A valid SSL certificate must be installed on the server to ensure secure communication. The certificate should be trusted by a recognized Certificate Authority (CA) and must not be self-signed.
-- **IP Whitelisting**:<br>
-  The IP addresses used by the connector must be whitelisted on the target system's firewall to allow access. Ensure that the firewall rules are configured to permit incoming and outgoing connections from these IPs.
--->
 
 ### Connection settings
 
 The following settings are required to connect to the API.
 
-| Setting  | Description                        | Mandatory |
-| -------- | ---------------------------------- | --------- |
-| UserName | The UserName to connect to the API | Yes       |
-| Password | The Password to connect to the API | Yes       |
-| BaseUrl  | The URL to the API                 | Yes       |
+| Setting           | Description                               | Mandatory |
+| ----------------- | ----------------------------------------- | --------- |
+| BaseUrl           | The URL to the API                        | Yes       |
+| AuthorizationKey  | The authoriazation key to connect the api | Yes       |
 
 ### Correlation configuration
 
-The correlation configuration is used to specify which properties will be used to match an existing account within _MyAcademy_ to a person in _HelloID_.
-
-| Setting                   | Value                             |
-| ------------------------- | --------------------------------- |
-| Enable correlation        | `True`                            |
-| Person correlation field  | `PersonContext.Person.ExternalId` |
-| Account correlation field | `EmployeeNumber`                  |
+Correlation is not supported for this connector as it isn't possible te retrieve existing accounts. The field UserID is the unique value of a user. If it doesn't exist, it will be created, otherwise it will be updated.
 
 > [!TIP]
 > _For more information on correlation, please refer to our correlation [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems/correlation.html) pages_.
@@ -107,23 +91,18 @@ The field mapping can be imported by using the _fieldMapping.json_ file.
 
 ### Account Reference
 
-The account reference is populated with the property `id` property from _MyAcademy_
+The account reference is populated with the property `UserID` property from _MyAcademy_
 
 ## Remarks
 
-<!--
-Provide remarks on special aspects of the code or the internal workings of the connector.
-
-**Please ensure to use `###` tags for H3 headings for each remark.**
-
-Example:
-
 ### GET Account API Limitation
-- **No GET Endpoint**: The API does not support a GET request to retrieve account details. You may need to use alternative methods or endpoints to access account information, such as using a POST request with appropriate parameters.
+- **No GET Endpoint**: The API does not support a GET request to retrieve account details. If the provided UsersId does not exist, a new user will be created.
 
-### Correlation Based on Email Address
-- **Email Address Correlation**: The connector relies on email addresses to correlate and match records between systems. Ensure that email addresses are accurately maintained and consistent across systems to avoid issues with data synchronization and matching.
--->
+### Levels
+- If Level1Code, Level2Code or Level3Code don't exist, a new level will be created. Otherwise, if the name differs, the name will be updated.
+
+### Clearing fields
+- The '*NONE*' value is used for clearing fields. An empty value will not update the current value of the field.
 
 ## Development resources
 
@@ -133,13 +112,7 @@ The following endpoints are used by the connector
 
 | Endpoint | HTTP Method      | Description                                  |
 | -------- | ---------------- | -------------------------------------------- |
-| /Users   | GET, POST, PATCH | Retrieve, Create and update user information |
-
-### API documentation
-
-<!--
-If publicly available, provide the link to the API documentation
--->
+| /contentHandler/usersCsv   | POST | Create and update user information |
 
 ## Getting help
 
