@@ -97,7 +97,7 @@ try {
             }
 
             # Convert object to csv and make sure each line ends with a newline
-            $body = ($formattedObject | ConvertTo-Csv -NoTypeInformation -Delimiter ',') -join "`r`n" 
+            $body = ($formattedObject | ConvertTo-Csv -NoTypeInformation -Delimiter ',') -join "`r`n"
 
             $splatCreateParams = @{
                 Uri         = "$($actionContext.Configuration.BaseUrl)/contentHandler/usersCsv"
@@ -110,7 +110,18 @@ try {
             if (-not($actionContext.DryRun -eq $true)) {
                 Write-Information 'Creating and correlating MyAcademy account'
                 $response = Invoke-RestMethod @splatCreateParams
-                Write-Warning ($response)
+                Write-Information "MyAcademy response: $response"
+
+                # MyAcademy always returns HTTP 200. The result is in the last CSV column:
+                # 'No Error Occurred' on success, otherwise the error message.
+                $responseText = "$response"
+                if ($responseText -notmatch 'No Error Occurred') {
+                    $errorMessage = $responseText
+                    if ($responseText -match '"((?:[^"]|"")*)"\s*$') {
+                        $errorMessage = $Matches[1] -replace '""', '"'
+                    }
+                    throw "MyAcademy did not create the account for [$($actionContext.Data.UserID)]. Error: $errorMessage"
+                }
 
                 $outputContext.AccountReference = $actionContext.Data.UserID
             }
